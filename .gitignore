@@ -1,0 +1,26 @@
+# Generated Java sources
+src/main/generated/kdu_jni
+
+# Kakadu directories and zip files
+v7_*
+v8_*
+v9_*
+
+# Object files
+*.o
+*.ko
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app

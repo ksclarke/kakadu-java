@@ -1,0 +1,320 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>kakadu-java</artifactId>
+  <version>7.8-SNAPSHOT</version>
+  <name>Kakadu Java Native Interfaces</name>
+  <description>A packaging of Kakadu for use by Java applications</description>
+
+  <licenses>
+    <!-- This license if for this project, obviously, not Kakadu, which is proprietary -->
+    <license>
+      <name>The 3-Clause BSD License</name>
+      <url>https://opensource.org/licenses/BSD-3-clause</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git@github.com:ksclarke/kakadu-java.git</connection>
+    <developerConnection>scm:git:git@github.com:ksclarke/kakadu-java.git</developerConnection>
+    <url>git@github.com:ksclarke/kakadu-java.git</url>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/ksclarke/kakadu-java/issues</url>
+  </issueManagement>
+
+  <developers>
+    <developer>
+      <email>ksclarke@gmail.com</email>
+      <name>Kevin S. Clarke</name>
+      <url>http://kevinclarke.info</url>
+      <roles>
+        <role>developer</role>
+      </roles>
+      <timezone>America/New_York</timezone>
+    </developer>
+  </developers>
+
+  <properties>
+    <!-- This must be supplied at build time -->
+    <kakadu.version></kakadu.version>
+
+    <!-- These are plugins used by the build itself -->
+    <jar.plugin.version>3.0.2</jar.plugin.version>
+    <replacer.plugin.version>1.5.3</replacer.plugin.version>
+    <os.maven.version.plugin>1.4.0.Final</os.maven.version.plugin>
+    <os.detection.classifierWithLikes>rhel</os.detection.classifierWithLikes>
+  </properties>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>${os.maven.version.plugin}</version>
+      </extension>
+    </extensions>
+    <plugins>
+      <plugin>
+        <groupId>com.google.code.maven-replacer-plugin</groupId>
+        <artifactId>replacer</artifactId>
+        <version>${replacer.plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>replace</goal>
+            </goals>
+          </execution>
+        </executions>
+        <!-- We want to make the build conform to Maven's directory structure -->
+        <configuration>
+          <includes>
+            <include>${basedir}/${kakadu.version}/managed/make/Targets.mk</include>
+            <include>${basedir}/${kakadu.version}/apps/make/Targets.mk</include>
+            <include>${basedir}/${kakadu.version}/managed/managed.xcodeproj/project.pbxproj</include>
+            <include>${basedir}/${kakadu.version}/apps/apps.xcodeproj/project.pbxproj</include>
+            <include>${basedir}/${kakadu.version}/documentation/hyperdoc.bat_renamed</include>
+            <include>${basedir}/${kakadu.version}/documentation/hyperdoc_windows.bat_renamed</include>
+          </includes>
+          <replacements>
+            <replacement>
+              <token>../../java/kdu_jni</token>
+              <value>../../src/main/generated/kdu_jni</value>
+            </replacement>
+          </replacements>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-property</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <evaluateBeanshell>
+                  <condition><![CDATA[
+                    try {
+                      process = Runtime.getRuntime().exec("make -v");
+                      process.waitFor();
+                      
+                      return process.exitValue() == 0;
+                    } catch (Exception details) {
+                      return false;
+                    }
+                  ]]></condition>
+                  <message>Couldn't find 'make' on system</message>
+                </evaluateBeanshell>
+                <evaluateBeanshell>
+                  <condition><![CDATA[
+                    try {
+                      process = Runtime.getRuntime().exec("g++ -v");
+                      process.waitFor();
+                      
+                      return process.exitValue() == 0;
+                    } catch (Exception details) {
+                      return false;
+                    }
+                  ]]></condition>
+                  <message>Couldn't find 'g++' on system</message>
+                </evaluateBeanshell>
+                <requireProperty>
+                  <property>kakadu.version</property>
+                  <message>You must supply a kakadu.version</message>
+                  <regex>.*-.*</regex>
+                  <regexMessage>
+                  <![CDATA[The kakadu.version must be supplied and contain your license ID]]>
+                  </regexMessage>
+                </requireProperty>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>make-kakadu</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <workingDirectory>${project.basedir}/${kakadu.version}/make</workingDirectory>
+              <executable>make</executable>
+              <arguments>
+                <argument>-f</argument>
+                <argument>${kakadu.makefile}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>clean</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <workingDirectory>${project.basedir}/${kakadu.version}/make</workingDirectory>
+              <executable>make</executable>
+              <arguments>
+                <argument>-f</argument>
+                <argument>${kakadu.makefile}</argument>
+                <argument>clean</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-natives</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/natives</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/${kakadu.version}/bin/${kakadu.natives}</directory>
+                  <filtering>false</filtering>
+                  <includes>
+                    <include>kdu_expand</include>
+                    <include>kdu_buffered_expand</include>
+                    <include>kdu_compress</include>
+                    <include>kdu_buffered_compress</include>
+                    <include>kdu_jp2info</include>
+                  </includes>
+                </resource>
+                <resource>
+                  <directory>${project.basedir}/${kakadu.version}/lib/${kakadu.natives}</directory>
+                  <excludes>
+                    <exclude>.keep</exclude>
+                  </excludes>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+              <overwrite>true</overwrite>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkMode>once</forkMode>
+          <argLine>-Djava.library.path=${project.basedir}/${kakadu.version}/lib/${kakadu.natives}</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${jar.plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classesDirectory>${project.build.directory}/natives</classesDirectory>
+              <classifier>${kakadu.classifier}</classifier>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>br.com.ingenieux</groupId>
+        <artifactId>jbake-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <kakadu.makefile>Makefile-Mingw-x86-64-gcc</kakadu.makefile>
+        <kakadu.natives>Mingw-x86-64-gcc</kakadu.natives>
+        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
+      </properties>
+    </profile>
+    <profile>
+      <id>linux32</id>
+      <activation>
+        <os>
+          <name>Linux</name>
+          <arch>i386</arch>
+        </os>
+      </activation>
+      <properties>
+        <kakadu.makefile>Makefile-Linux-x86-32-gcc</kakadu.makefile>
+        <kakadu.natives>Linux-x86-32-gcc</kakadu.natives>
+        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
+      </properties>
+    </profile>
+    <profile>
+      <id>linux64</id>
+      <activation>
+        <os>
+          <name>Linux</name>
+          <arch>!i386</arch>
+        </os>
+      </activation>
+      <properties>
+        <kakadu.makefile>Makefile-Linux-x86-64-gcc</kakadu.makefile>
+        <kakadu.natives>Linux-x86-64-gcc</kakadu.natives>
+        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
+      </properties>
+    </profile>
+    <profile>
+      <id>mac64</id>
+      <activation>
+        <os>
+          <name>Mac OS X</name>
+          <arch>x86_64</arch>
+        </os>
+      </activation>
+      <properties>
+        <kakadu.makefile>Makefile-MAC-x86-all-gcc</kakadu.makefile>
+        <kakadu.natives>MAC-x86-all-gcc</kakadu.natives>
+        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
+      </properties>
+    </profile>
+  </profiles>
+
+  <!-- Enables pushing project documentation up to an S3 bucket -->
+  <distributionManagement>
+    <site>
+      <id>s3.site</id>
+      <url>s3://projects.freelibrary.info/kakadu-java</url>
+    </site>
+  </distributionManagement>
+
+  <parent>
+    <artifactId>freelib-parent</artifactId>
+    <groupId>info.freelibrary</groupId>
+    <version>0.1.8</version>
+  </parent>
+
+</project>
