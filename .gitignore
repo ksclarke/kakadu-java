@@ -1,6 +1,9 @@
 # Generated Java sources
 src/main/generated/kdu_jni
 
+# A symlink for Macs
+src/main/kakadu
+
 # Kakadu directories and zip files
 v7_*
 v8_*
