@@ -60,7 +60,7 @@ before_install:
   - aws s3 cp --recursive --quiet s3://kakadu/ $TRAVIS_BUILD_DIR
 install: true
 script:
-  - travis_retry mvn -q package -Dkakadu.version=$KAKADU_VERSION
+  - mvn -q package -Dkakadu.version=$KAKADU_VERSION
 
 # The only branch we build on is master; all other builds are done on PRs to master
 branches:
