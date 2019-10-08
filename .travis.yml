@@ -45,7 +45,6 @@ matrix:
     - os: osx
       osx_image: xcode10.1
       env: KAKADU_VERSION="$KAKADU_VERSION_v7_A_7"
-      #PROFILE="-Pmac64-latest-build"
 # Java is not yet supported on the Windows Build Environment
 #    # Windows v7_A_6
 #    - os: windows
@@ -61,14 +60,7 @@ before_install:
   - aws s3 cp --recursive --quiet s3://kakadu/ $TRAVIS_BUILD_DIR
 install: true
 script:
-  - mvn help:active-profiles -Dkakadu.version=$KAKADU_VERSION
-  - mvn -q package -Dkakadu.version=$KAKADU_VERSION
-
-#travis_retry
-
-after_failure:
-  - ls -l src/main
-  - ls -l src/main/kakadu/make
+  - travis_retry mvn -q package -Dkakadu.version=$KAKADU_VERSION
 
 # The only branch we build on is master; all other builds are done on PRs to master
 branches:

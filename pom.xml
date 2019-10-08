@@ -44,9 +44,24 @@
     <!-- These are plug-ins used by the build itself -->
     <jar.plugin.version>3.0.2</jar.plugin.version>
     <replacer.plugin.version>1.5.3</replacer.plugin.version>
-    <os.maven.version.plugin>1.4.0.Final</os.maven.version.plugin>
+    <freelib.maven.version>0.0.3</freelib.maven.version>
+    <os.maven.version.plugin>1.6.2</os.maven.version.plugin>
     <os.detection.classifierWithLikes>rhel</os.detection.classifierWithLikes>
+    <slf4j.simple.logger.version>1.7.25</slf4j.simple.logger.version>
   </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.simple.logger.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 
   <build>
     <extensions>
@@ -142,7 +157,6 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
-        <!-- 
           <execution>
             <id>make-kakadu</id>
             <phase>compile</phase>
@@ -157,7 +171,7 @@
                 <argument>${kakadu.makefile}</argument>
               </arguments>
             </configuration>
-          </execution> -->
+          </execution>
           <execution>
             <id>clean</id>
             <phase>clean</phase>
@@ -181,7 +195,7 @@
         <executions>
           <execution>
             <id>copy-natives</id>
-            <!--  <phase>package</phase> -->
+            <phase>package</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
@@ -231,7 +245,7 @@
             </goals>
             <configuration>
               <classesDirectory>${project.build.directory}/natives</classesDirectory>
-              <classifier>${kakadu.classifier}</classifier>
+              <classifier>${os.detected.classifier}</classifier>
             </configuration>
           </execution>
         </executions>
@@ -257,7 +271,6 @@
       <properties>
         <kakadu.makefile>Makefile-Mingw-x86-64-gcc</kakadu.makefile>
         <kakadu.natives>Mingw-x86-64-gcc</kakadu.natives>
-        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
       </properties>
     </profile>
     <profile>
@@ -271,7 +284,6 @@
       <properties>
         <kakadu.makefile>Makefile-Linux-x86-32-gcc</kakadu.makefile>
         <kakadu.natives>Linux-x86-32-gcc</kakadu.natives>
-        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
       </properties>
     </profile>
     <profile>
@@ -285,12 +297,10 @@
       <properties>
         <kakadu.makefile>Makefile-Linux-x86-64-gcc</kakadu.makefile>
         <kakadu.natives>Linux-x86-64-gcc</kakadu.natives>
-        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
       </properties>
     </profile>
-    <!-- This profile is a workaround Maven's limited profile activation options -->
     <profile>
-      <id>mac</id>
+      <id>mac-64</id>
       <activation>
         <os>
           <name>Mac OS X</name>
@@ -300,62 +310,54 @@
       <build>
         <plugins>
           <plugin>
-            <artifactId>exec-maven-plugin</artifactId>
-            <groupId>org.codehaus.mojo</groupId>
+            <groupId>info.freelibrary</groupId>
+            <artifactId>freelib-maven-plugins</artifactId>
+            <version>${freelib.maven.version}</version>
             <executions>
               <execution>
-                <id>mac-source-preparation</id>
-                <phase>process-sources</phase>
+                <id>set-properties-for-mac-64</id>
+                <phase>validate</phase>
                 <goals>
-                  <goal>exec</goal>
+                  <goal>check-file-set-property</goal>
                 </goals>
                 <configuration>
-                  <executable>ln</executable>
-                  <arguments>
-                    <argument>-s</argument>
-                    <argument>${project.basedir}/${kakadu.version}</argument>
-                    <argument>${project.basedir}/src/main/kakadu</argument>
-                  </arguments>
+                  <exists>${kakadu.version}/make/Makefile-MAC-x86-64-gcc</exists>
+                  <properties>
+                    <property>
+                      <name>kakadu.makefile</name>
+                      <value>Makefile-MAC-x86-64-gcc</value>
+                    </property>
+                    <property>
+                      <name>kakadu.natives</name>
+                      <value>MAC-x86-64-gcc</value>
+                    </property>
+                  </properties>
+                </configuration>
+              </execution>
+              <execution>
+                <id>set-properties-for-mac-all</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>check-file-set-property</goal>
+                </goals>
+                <configuration>
+                  <missing>${kakadu.version}/make/Makefile-MAC-x86-64-gcc</missing>
+                  <properties>
+                    <property>
+                      <name>kakadu.makefile</name>
+                      <value>Makefile-MAC-x86-all-gcc</value>
+                    </property>
+                    <property>
+                      <name>kakadu.natives</name>
+                      <value>MAC-x86-all-gcc</value>
+                    </property>
+                  </properties>
                 </configuration>
               </execution>
             </executions>
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>mac-64</id>
-      <activation>
-        <os>
-          <name>Mac OS X</name>
-          <arch>x86_64</arch>
-        </os>
-        <file>
-          <exists>src/main/kakadu/make/Makefile-MAC-x86-64-gcc</exists>
-        </file>
-      </activation>
-      <properties>
-        <kakadu.makefile>Makefile-MAC-x86-64-gcc</kakadu.makefile>
-        <kakadu.natives>MAC-x86-64-gcc</kakadu.natives>
-        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
-      </properties>
-    </profile>
-    <profile>
-      <id>mac-all</id>
-      <activation>
-        <os>
-          <name>Mac OS X</name>
-          <arch>x86_64</arch>
-        </os>
-        <file>
-          <exists>src/main/kakadu/make/Makefile-MAC-x86-all-gcc</exists>
-        </file>
-      </activation>
-      <properties>
-        <kakadu.makefile>Makefile-MAC-x86-all-gcc</kakadu.makefile>
-        <kakadu.natives>MAC-x86-all-gcc</kakadu.natives>
-        <kakadu.classifier>${os.detected.classifier}</kakadu.classifier>
-      </properties>
     </profile>
   </profiles>
 
@@ -370,7 +372,7 @@
   <parent>
     <artifactId>freelib-parent</artifactId>
     <groupId>info.freelibrary</groupId>
-    <version>0.1.8</version>
+    <version>3.7.3</version>
   </parent>
 
 </project>

@@ -4,6 +4,9 @@ src/main/generated/kdu_jni
 # A symlink for Macs
 src/main/kakadu
 
+# MessageCodes are auto-generated
+src/main/generated/info/
+
 # Kakadu directories and zip files
 v7_*
 v8_*
