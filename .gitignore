@@ -1,6 +1,9 @@
 # Generated Java sources
 src/main/generated/kdu_jni
 
+# MessageCodes are auto-generated
+src/main/generated/info/
+
 # Kakadu directories and zip files
 v7_*
 v8_*

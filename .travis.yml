@@ -1,0 +1,79 @@
+language: java
+
+sudo: false
+
+matrix:
+  include:
+    # Linux 64 v7_A_6
+    - os: linux
+      env: KAKADU_VERSION="$KAKADU_VERSION_v7_A_6"
+      jdk: openjdk11
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+    # Linux 64 v7_A_7
+#    - os: linux
+#      env: KAKADU_VERSION="$KAKADU_VERSION_v7_A_7"
+#      jdk: openjdk11
+#      addons:
+#        apt:
+#          packages:
+#            - gcc-multilib
+# Temporarily turn off Linux 32 bit
+#    # Linux 32 v7_A_6
+#    - os: linux
+#      env: MAVEN_PROFILE="-DosDetection=false -Plinux32" KAKADU_VERSION="${KAKADU_VERSION_v7_A_6}"
+#      jdk: oraclejdk11
+#      addons:
+#        apt:
+#          packages:
+#            - gcc-multilib
+#    # Linux 32 v7_A_7
+#    - os: linux
+#      env: MAVEN_PROFILE="-DosDetection=false -Plinux32" KAKADU_VERSION="${KAKADU_VERSION_v7_A_7}"
+#      jdk: oraclejdk11
+#      addons:
+#        apt:
+#          packages:
+#            - gcc-multilib
+    # OS X v7_A_6 JDK11
+#    - os: osx
+#      osx_image: xcode10.1
+#      env: KAKADU_VERSION="$KAKADU_VERSION_v7_A_6" PROFILE="-Pmac64-older-build"
+    # OS X v7_A_7 JDK11
+    - os: osx
+      osx_image: xcode10.1
+      env: KAKADU_VERSION="$KAKADU_VERSION_v7_A_7"
+# Java is not yet supported on the Windows Build Environment
+#    # Windows v7_A_6
+#    - os: windows
+#      env: KAKADU_VERSION="${KAKADU_VERSION_v7_A_6}"
+#    # Windows v7_A_7
+#    - os: windows
+#      env: KAKADU_VERSION="${KAKADU_VERSION_v7_A_7}"
+
+before_install:
+  - if [ $TRAVIS_OS_NAME = 'windows' ]; then sudo choco install jdk11; fi
+  - if [ $TRAVIS_OS_NAME = 'osx' ]; then export PATH=${PATH}:/Users/travis/Library/Python/2.7/bin; fi
+  - pip --quiet install --user awscli
+  - aws s3 cp --recursive --quiet s3://kakadu/ $TRAVIS_BUILD_DIR
+install: true
+script:
+  - mvn -q package -Dkakadu.version=$KAKADU_VERSION
+
+# The only branch we build on is master; all other builds are done on PRs to master
+branches:
+  only:
+  - master
+
+cache:
+  directories:
+    - $HOME/.m2
+
+notifications:
+  email:
+    recipients:
+      - ksclarke@ksclarke.io
+    on_failure: change
+    on_success: change
